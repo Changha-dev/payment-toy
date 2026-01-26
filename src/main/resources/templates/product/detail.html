@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Product Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container mt-5">
+    <h1 class="mb-4" th:text="${product.name}">Product Name</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Price: <span th:text="${product.price}">10000</span> Won</h4>
+            <p class="card-text">Remaining Stock: <span th:text="${product.stock}">10</span></p>
+
+            <hr>
+
+            <form>
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="quantity" value="1" min="1" max="1" readonly>
+                    <div class="form-text">Limited to 1 per person.</div>
+                </div>
+                <button type="button" class="btn btn-success btn-lg" onclick="requestPay()">Buy Now</button>
+            </form>
+
+            <a href="/" class="btn btn-secondary mt-3">Back to List</a>
+        </div>
+    </div>
+
+    <!-- jQuery & PortOne SDK -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+
+    <script th:inline="javascript">
+        var IMP = window.IMP;
+        var userCode = "imp64266311";
+        IMP.init(userCode);
+
+        function requestPay() {
+            var productId = [[${ product.id }]];
+            var count = 1;
+            var memberId = 1; // Demo user (created in DataInit)
+
+            // 1. Create Order
+            $.ajax({
+                type: 'POST',
+                url: '/api/orders',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    memberId: memberId,
+                    productId: productId,
+                    count: count
+                }),
+                success: function (res) {
+                    console.log("Order Created:", res);
+                    // 2. Request Payment
+                    IMP.request_pay({
+                        pg: "kakaopay", // Use kakaopay for easier test config
+                        pay_method: "card",
+                        merchant_uid: res.orderUid,
+                        name: res.itemName,
+                        amount: res.paymentPrice,
+                        buyer_email: res.buyerEmail,
+                        buyer_name: res.buyerName,
+                        buyer_addr: res.buyerAddress
+                    }, function (rsp) {
+                        if (rsp.success) {
+                            // 3. Verify Payment
+                            alert("Payment successful! Verifying...");
+                            // Call Verification API (Not implemented yet)
+                            verifyPayment(rsp.imp_uid, rsp.merchant_uid);
+                        } else {
+                            alert("Payment failed: " + rsp.error_msg);
+                        }
+                    });
+                },
+                error: function (err) {
+                    alert("Order creation failed: " + err.responseText);
+                }
+            });
+        }
+
+        function verifyPayment(imp_uid, merchant_uid) {
+            $.ajax({
+                type: 'POST',
+                url: '/api/payment/verify',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    imp_uid: imp_uid,
+                    merchant_uid: merchant_uid
+                }),
+                success: function (res) {
+                    alert("Verification Success! Order Completed.");
+                    location.href = "/";
+                },
+                error: function (err) {
+                    alert("Verification Failed: " + err.responseText);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
