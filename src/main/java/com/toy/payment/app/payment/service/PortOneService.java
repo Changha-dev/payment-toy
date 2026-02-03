@@ -103,6 +103,44 @@ public class PortOneService {
         }
     }
 
+    /**
+     * 결제 취소 (V1 API)
+     * 
+     * @param impUid PortOne 결제 고유 ID
+     * @param reason 취소 사유
+     * @return 취소 성공 여부
+     */
+    public boolean cancelPayment(String impUid, String reason) {
+        String accessToken = getAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("imp_uid", impUid);
+        body.put("reason", reason);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            String url = "https://api.iamport.kr/payments/cancel";
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            Map<String, Object> responseBody = response.getBody();
+
+            if (responseBody != null && ((Integer) responseBody.get("code")).equals(0)) {
+                log.info("결제 취소 성공 - impUid: {}, reason: {}", impUid, reason);
+                return true;
+            } else {
+                log.error("결제 취소 실패 - impUid: {}, response: {}", impUid, responseBody);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("결제 취소 API 호출 실패 - impUid: {}", impUid, e);
+            return false;
+        }
+    }
+
     @Data
     public static class PortOnePaymentResponse {
         private String impUid;
