@@ -39,7 +39,30 @@
         var userCode = "imp64266311";
         IMP.init(userCode);
 
+        // 멱등성 키 생성 (UUID v4)
+        function generateIdempotencyKey() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // 결제 진행 중 플래그 (더블클릭 방지)
+        var isPaymentInProgress = false;
+
         function requestPay() {
+            // 더블클릭 방지
+            if (isPaymentInProgress) {
+                alert("결제가 진행 중입니다. 잠시만 기다려주세요.");
+                return;
+            }
+            isPaymentInProgress = true;
+
+            // 버튼 비활성화
+            var payButton = document.querySelector('.btn-success');
+            payButton.disabled = true;
+            payButton.textContent = '처리 중...';
+
             var productId = [[${ product.id }]];
             var count = 1;
             var memberId = 1; // Demo user (created in DataInit)
@@ -56,6 +79,11 @@
                 }),
                 success: function (res) {
                     console.log("Order Created:", res);
+
+                    // 멱등성 키 생성 (주문 UID 기반 + 랜덤)
+                    var idempotencyKey = res.orderUid + '-' + generateIdempotencyKey().substring(0, 8);
+                    console.log("Generated Idempotency Key:", idempotencyKey);
+
                     // 2. Request Payment
                     IMP.request_pay({
                         pg: "kakaopay", // Use kakaopay for easier test config
@@ -65,41 +93,62 @@
                         amount: res.paymentPrice,
                         buyer_email: res.buyerEmail,
                         buyer_name: res.buyerName,
-                        buyer_addr: res.buyerAddress
+                        buyer_addr: res.buyerAddress,
+                        m_redirect_url: window.location.origin + "/products/" + productId + "?payment=complete"
                     }, function (rsp) {
                         if (rsp.success) {
-                            // 3. Verify Payment
+                            // 3. Verify Payment with Idempotency Key
                             alert("Payment successful! Verifying...");
-                            // Call Verification API (Not implemented yet)
-                            verifyPayment(rsp.imp_uid, rsp.merchant_uid);
+                            verifyPayment(rsp.imp_uid, rsp.merchant_uid, idempotencyKey);
                         } else {
                             alert("Payment failed: " + rsp.error_msg);
+                            resetPaymentButton();
                         }
                     });
                 },
                 error: function (err) {
                     alert("Order creation failed: " + err.responseText);
+                    resetPaymentButton();
                 }
             });
         }
 
-        function verifyPayment(imp_uid, merchant_uid) {
+        function verifyPayment(imp_uid, merchant_uid, idempotencyKey) {
             $.ajax({
                 type: 'POST',
                 url: '/api/payment/verify',
                 contentType: 'application/json',
+                headers: {
+                    'Idempotency-Key': idempotencyKey  // 멱등성 키 헤더 추가!
+                },
                 data: JSON.stringify({
                     imp_uid: imp_uid,
                     merchant_uid: merchant_uid
                 }),
                 success: function (res) {
-                    alert("Verification Success! Order Completed.");
+                    alert("Verification Success! Order Completed.\n(Idempotency Key: " + idempotencyKey + ")");
                     location.href = "/";
                 },
-                error: function (err) {
-                    alert("Verification Failed: " + err.responseText);
+                error: function (xhr, status, err) {
+                    if (xhr.status === 409) {
+                        // 동시 요청 감지 - 잠시 후 재시도
+                        alert("요청이 처리 중입니다. 잠시 후 다시 시도합니다.");
+                        setTimeout(function () {
+                            verifyPayment(imp_uid, merchant_uid, idempotencyKey);
+                        }, 2000);
+                    } else {
+                        alert("Verification Failed: " + xhr.responseText);
+                        resetPaymentButton();
+                    }
                 }
             });
+        }
+
+        function resetPaymentButton() {
+            isPaymentInProgress = false;
+            var payButton = document.querySelector('.btn-success');
+            payButton.disabled = false;
+            payButton.textContent = 'Buy Now';
         }
     </script>
 </body>
