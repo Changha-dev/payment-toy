@@ -51,6 +51,11 @@ public class PaymentService {
                 return;
             }
 
+            // 5. 재고 차감 (결제 검증 성공 후에만 차감 - 낙관적 락으로 동시성 제어)
+            order.getProduct().decreaseStock(order.getCount());
+            log.info("Stock decreased for product: {}, count: {}",
+                    order.getProduct().getId(), order.getCount());
+
             payment.changePaymentBySuccess(PaymentStatus.PAID, impUid);
             paymentRepository.save(payment);
 

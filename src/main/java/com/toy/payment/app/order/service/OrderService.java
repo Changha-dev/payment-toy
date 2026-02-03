@@ -27,7 +27,10 @@ public class OrderService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        product.decreaseStock(count); // Stock check & decrease
+        // 재고 확인만 (차감은 결제 검증 후에 수행)
+        if (product.getStock() < count) {
+            throw new IllegalArgumentException("재고가 부족합니다. 현재 재고: " + product.getStock());
+        }
 
         Order order = new Order(member, product, count);
         return orderRepository.save(order);
