@@ -20,8 +20,16 @@ public class DataInit implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         if (productRepository.count() == 0) {
-            productRepository.save(new Product("Limited Edition Sneaker", 150L, 100L));
-            productRepository.save(new Product("Vintage Watch", 500L, 5L));
+            productRepository.save(Product.builder()
+                    .name("Limited Edition Sneaker")
+                    .price(150L)
+                    .stock(100L)
+                    .build());
+            productRepository.save(Product.builder()
+                    .name("Vintage Watch")
+                    .price(500L)
+                    .stock(5L)
+                    .build());
         }
 
         if (memberRepository.count() == 0) {
