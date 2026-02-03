@@ -20,7 +20,7 @@ services:
     image: redis:latest
     container_name: payment_redis
     ports:
-      - "6379:6379"
+      - "6380:6379"  # 로컬 Redis(6379)와 충돌 방지
     volumes:
       - ./redis-data:/data
     command: redis-server --appendonly yes
