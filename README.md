@@ -5,3 +5,5 @@
 <img width="1146" height="1188" alt="image" src="https://github.com/user-attachments/assets/b0c41177-eb38-445d-af9b-8be6ab7828dc" />
 
 ### 재고 데이터 정합성
+<img width="1018" height="1098" alt="image" src="https://github.com/user-attachments/assets/8ae7d9e4-8b72-4bc6-b920-6d18fcce86ca" />
+
