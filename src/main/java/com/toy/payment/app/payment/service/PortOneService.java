@@ -29,7 +29,6 @@ public class PortOneService {
     private String apiSecret; // V1 REST API Secret
 
     public PortOnePaymentResponse getPaymentInfo(String impUid, String merchantUid) {
-        // 1. Get Access Token (V1)
         String accessToken = getAccessToken();
 
         HttpHeaders headers = new HttpHeaders();
@@ -37,7 +36,6 @@ public class PortOneService {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {
-            // 2. Request Payment Info (V1) - Try find by imp_uid first
             String url = "https://api.iamport.kr/payments/" + impUid;
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
             return parseResponse(response.getBody());
@@ -46,7 +44,6 @@ public class PortOneService {
                     merchantUid);
 
             try {
-                // 3. Fallback: Request Payment Info by merchant_uid
                 String url = "https://api.iamport.kr/payments/find/" + merchantUid;
                 ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
                 return parseResponse(response.getBody());

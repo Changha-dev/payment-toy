@@ -24,4 +24,11 @@ public class ProductService {
         return productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
     }
+
+    @Transactional
+    public void decreaseStock(Long id, long quantity) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        product.decreaseStock(quantity);
+    }
 }
