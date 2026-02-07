@@ -44,18 +44,6 @@
 
 ---
 
-## 실행 방법
-
-```bash
-# Docker로 MySQL, Redis 실행
-docker-compose up -d
-
-# 애플리케이션 실행
-./gradlew bootRun
-```
-
----
-
 ## 프로젝트 구조
 
 ```
